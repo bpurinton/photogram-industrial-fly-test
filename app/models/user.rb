@@ -15,4 +15,7 @@ class User < ApplicationRecord
 
   has_many :likes, foreign_key: :fan_id
   has_many :liked_photos, through: :likes, source: :photo
+
+
+  validates :username, presence: true, uniqueness: { case_sensitive: false }
 end
