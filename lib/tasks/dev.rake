@@ -1,40 +1,80 @@
 desc "Fill the database tables with some sample data"
 task sample_data: :environment do
   p "Creating sample data"
+  starting = Time.now
 
-  FollowRequest.destroy_all
-  Like.destroy_all
-  Photo.destroy_all
-  User.destroy_all
-  Comment.destroy_all
+  FollowRequest.delete_all
+  Comment.delete_all
+  Like.delete_all
+  Photo.delete_all
+  User.delete_all
 
-  10.times do
-    user = User.new
-    user_hash = Faker::Internet.user('username', 'email', 'password')
-    user.username = user_hash[:username]
-    user.email = user_hash[:email]
-    user.password = user_hash[:password]
-    user.private = [true, false].sample
-    user.comments_count = rand(100)
-    user.likes_count = rand(100)
-    user.save
+  12.times do
+    name = Faker::Name.first_name
+    User.create(
+      email: "#{name}@example.com",
+      password: "password",
+      username: name.downcase,
+      private: [true, false].sample,
+    )
   end
 
-  p "Added #{User.count} Users"
-  
+  users = User.all
 
-  #
-#  id                     :bigint           not null, primary key
-#  comments_count         :integer          default(0)
-#  email                  :citext           default(""), not null
-#  encrypted_password     :string           default(""), not null
-#  likes_count            :integer          default(0)
-#  photos_count           :integer          default(0)
-#  private                :boolean          default(TRUE)
-#  remember_created_at    :datetime
-#  reset_password_sent_at :datetime
-#  reset_password_token   :string
-#  username               :citext
-#  created_at             :datetime         not null
-#  updated_at             :datetime         not null
+  users.each do |first_user|
+    users.each do |second_user|
+      if rand < 0.75
+        first_user.sent_follow_requests.create(
+          recipient: second_user,
+          status: FollowRequest.statuses.values.sample
+        )
+      end
+
+      if rand < 0.75
+        second_user.sent_follow_requests.create(
+          recipient: first_user,
+          status: FollowRequest.statuses.values.sample
+        )
+      end
+    end
+  end
+
+  users.each do |user|
+    rand(15).times do
+      photo = user.own_photos.create(
+        caption: Faker::Quote.jack_handey,
+        image: "https://robohash.org/#{rand(9999)}"
+      )
+
+      user.followers.each do |follower|
+        if rand < 0.5
+          begin
+            photo.fans << follower
+          rescue => e
+            # p "Fan alread liked the photo, moving on"
+          end
+          # p follower
+          # photo.fans.create(
+          #   fan_id: follower
+          # )
+        end
+
+        if rand < 0.25
+          photo.comments.create(
+            body: Faker::Quote.jack_handey,
+            author: follower
+          )
+        end
+      end
+    end
+  end
+
+  ending = Time.now
+  p "It took #{(ending - starting).to_i} seconds to create sample data."
+  p "There are now #{User.count} users."
+  p "There are now #{FollowRequest.count} follow requests."
+  p "There are now #{Photo.count} photos."
+  p "There are now #{Like.count} likes."
+  p "There are now #{Comment.count} comments."
+
 end
