@@ -34,12 +34,14 @@ class User < ApplicationRecord
 
   has_many :sent_follow_requests, class_name: "FollowRequest", foreign_key: :recipient_id
   has_many :received_follow_requests, class_name: "FollowRequest", foreign_key: :sender_id
-  has_many :accepted_sent_follow_requests, -> { accepted }, class_name: "FollowRequest", foreign_key: :recipient_id
-  has_many :accepted_received_follow_requests, -> { accepted }, class_name: "FollowRequest", foreign_key: :sender_id
+  has_many :accepted_sent_follow_requests, -> { where(status: "accepted") }, class_name: "FollowRequest", foreign_key: :recipient_id
+  has_many :accepted_received_follow_requests, -> { where(status: "accepted") }, class_name: "FollowRequest", foreign_key: :sender_id
 
   has_many :likes, foreign_key: :fan_id
   has_many :liked_photos, through: :likes, source: :photo
 
 
   validates :username, presence: true, uniqueness: { case_sensitive: false }
+
+  has_many :leaders, through: :accepted_sent_follow_requests, source: :recipient 
 end
