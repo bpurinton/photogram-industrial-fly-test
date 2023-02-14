@@ -3,11 +3,13 @@ task sample_data: :environment do
   p "Creating sample data"
   starting = Time.now
 
-  FollowRequest.delete_all
-  Comment.delete_all
-  Like.delete_all
-  Photo.delete_all
-  User.delete_all
+  if Rails.env.development?
+    FollowRequest.delete_all
+    Comment.delete_all
+    Like.delete_all
+    Photo.delete_all
+    User.delete_all
+  end
 
   12.times do
     name = Faker::Name.first_name
@@ -47,19 +49,21 @@ task sample_data: :environment do
       )
 
       user.followers.each do |follower|
-        if rand < 0.5
-          begin
-            photo.fans << follower
-          rescue => e
-            # p "Fan alread liked the photo, moving on"
-          end
-          # p follower
-          # photo.fans.create(
-          #   fan_id: follower
-          # )
+        if rand < 0.7
+          # photo.fans << follower # DOES NOT WORK BECAUSE << uses create! and like validation fails
+
+          # begin
+          #   photo.fans << follower
+          # rescue => e
+          #   # p "Fan alread liked the photo, moving on"
+          # end
+
+          photo.likes.create(
+            fan: follower
+          )
         end
 
-        if rand < 0.25
+        if rand < 0.2
           photo.comments.create(
             body: Faker::Quote.jack_handey,
             author: follower
